@@ -76,10 +76,24 @@ canvas.blur{filter:blur(6px);}
   cursor:pointer;
   color:#fff;
 }
+
+/* 🌈 좌측 상단 로고 */
+#logo{
+  position:fixed;
+  top:10px;
+  left:10px;
+  width:60px;
+  height:auto;
+  z-index:15;
+  opacity:0.9;
+}
 </style>
 </head>
 <body>
 <canvas id="universe"></canvas>
+
+<!-- 🌈 로고 -->
+<img id="logo" src="https://raw.githubusercontent.com/metatoriworld/Image/main/mtllg.png" alt="MetaToRI Logo">
 
 <div id="backCover"></div>
 
@@ -91,9 +105,21 @@ canvas.blur{filter:blur(6px);}
   <div id="nftWallet"></div>
 </div>
 
+<!-- 🎵 배경음악 -->
+<audio id="bgm" src="https://raw.githubusercontent.com/metatoriworld/Image/main/mtlm1.mp3" loop></audio>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.6.5/dist/three-spritetext.min.js"></script>
 <script>
+/* 🎵 오디오 자동 재생 (모바일 대응) */
+const bgm=document.getElementById("bgm");
+bgm.volume=0.3;
+function tryPlay(){
+  bgm.play().catch(()=>{});
+  window.removeEventListener("touchstart",tryPlay);
+}
+window.addEventListener("touchstart",tryPlay);
+
 const canvas=document.getElementById("universe");
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setSize(window.innerWidth,window.innerHeight);
@@ -349,14 +375,13 @@ function closeCard(){
   setTimeout(()=>{
     canvas.style.pointerEvents="auto";
     rotationPaused=false;
-  },450); // 애니메이션 후 재활성화
+  },450);
 }
 ["click","touchstart"].forEach(evt=>{
   closeBtn.addEventListener(evt,closeCard);
   backCover.addEventListener(evt,closeCard);
 });
 
-// ⭐ 클릭 감지
 function detectStar(x,y){
   const rect=canvas.getBoundingClientRect();
   const scaleX=canvas.width/rect.width;
@@ -377,7 +402,6 @@ function detectStar(x,y){
   openCard(star);
 }
 
-// 🌟 Animate
 function animate(){
   requestAnimationFrame(animate);
   const t=performance.now()*0.001;
