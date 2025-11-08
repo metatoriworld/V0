@@ -18,9 +18,7 @@ canvas{
   touch-action:none;
   transition:filter 0.4s ease;
 }
-canvas.blur{
-  filter:blur(6px);
-}
+canvas.blur{filter:blur(6px);}
 
 /* 🌑 뒷배경 커버 */
 #backCover{
@@ -67,22 +65,9 @@ canvas.blur{
   margin-bottom:14px;
   box-shadow:0 0 25px rgba(255,255,255,0.7);
 }
-#nftTitle{
-  margin:4px 0;
-  font-size:1.15rem;
-  color:#fff;
-}
-#nftDesc{
-  margin:6px 0 8px;
-  font-size:0.9rem;
-  line-height:1.4;
-  color:#ddd;
-}
-#nftWallet{
-  font-size:0.8rem;
-  opacity:0.75;
-  color:#aaa;
-}
+#nftTitle{margin:4px 0;font-size:1.15rem;color:#fff;}
+#nftDesc{margin:6px 0 8px;font-size:0.9rem;line-height:1.4;color:#ddd;}
+#nftWallet{font-size:0.8rem;opacity:0.75;color:#aaa;}
 #closeBtn{
   position:absolute;
   top:8px;
@@ -96,10 +81,8 @@ canvas.blur{
 <body>
 <canvas id="universe"></canvas>
 
-<!-- 🌑 배경 커버 -->
 <div id="backCover"></div>
 
-<!-- 🌠 NFT 카드 -->
 <div id="nftCard">
   <div id="closeBtn">✕</div>
   <img id="nftImage" src="" alt="NFT Image" />
@@ -126,6 +109,9 @@ const MIN_DISTANCE=3,MAX_DISTANCE=400,ORBIT_SPEED=0.005,SCENE_ORBIT_SPEED=0.0002
 const FOV_MAX=60,FOV_MIN=5;
 let isTouching=false,touches=[],prevDistance=0,prevClientX=0,prevClientY=0;
 let rotationPaused=false;
+let touchMoved=false;
+let moveThreshold=5;
+let startX=0,startY=0;
 
 // 🌍 Earth
 const loader=new THREE.TextureLoader();
@@ -169,7 +155,6 @@ function createStar(x,y,z,size=0.25,starColor){
     new THREE.SphereGeometry(size*0.6,32,32),
     new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending})
   );
-
   const atmosphere=new THREE.Mesh(
     new THREE.SphereGeometry(size*2,16,16),
     new THREE.MeshBasicMaterial({
@@ -177,7 +162,6 @@ function createStar(x,y,z,size=0.25,starColor){
       blending:THREE.AdditiveBlending,depthWrite:false
     })
   );
-
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({
     map:haloTex,color:color,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending
   }));
@@ -223,7 +207,7 @@ const farStars=new THREE.Points(farGeo,new THREE.PointsMaterial({
 }));
 scene.add(farStars);
 
-// 🌌 같은 색상끼리 연결선
+// 🌌 연결선
 const colorGroups={};
 for(const s of stars){
   const hex=s.userData.colorKey;
@@ -260,13 +244,38 @@ function orbitCamera(dx,dy){
   offset.y=newY;
   camera.position.copy(cameraTarget).add(offset.normalize().multiplyScalar(dist));
 }
-function onTouchStart(e){e.preventDefault();isTouching=true;touches=Array.from(e.touches);
-if(touches.length===2){prevDistance=getDistance(touches[0],touches[1]);}
-else if(touches.length===1){prevClientX=touches[0].clientX;prevClientY=touches[0].clientY;}}
+
+function onTouchStart(e){
+  e.preventDefault();
+  isTouching=true;
+  touchMoved=false;
+  touches=Array.from(e.touches);
+  if(touches.length===1){
+    startX=touches[0].clientX;
+    startY=touches[0].clientY;
+    prevClientX=startX;
+    prevClientY=startY;
+  }else if(touches.length===2){
+    prevDistance=getDistance(touches[0],touches[1]);
+  }
+}
+
 function onTouchMove(e){
-  if(!isTouching)return;e.preventDefault();const current=Array.from(e.touches);
+  if(!isTouching)return;
+  e.preventDefault();
+  const current=Array.from(e.touches);
+
+  if(current.length===1){
+    const dx=current[0].clientX-startX;
+    const dy=current[0].clientY-startY;
+    if(Math.sqrt(dx*dx+dy*dy)>moveThreshold) touchMoved=true;
+  }else{
+    touchMoved=true;
+  }
+
   if(current.length===2){
-    const d=getDistance(current[0],current[1]);const dd=d-prevDistance;
+    const d=getDistance(current[0],current[1]);
+    const dd=d-prevDistance;
     const dist=camera.position.distanceTo(cameraTarget);
     const zf=dd*0.005*(dist/50);
     const dir=new THREE.Vector3().subVectors(camera.position,cameraTarget).normalize();
@@ -281,13 +290,24 @@ function onTouchMove(e){
   }
   touches=current;
 }
-function onTouchEnd(){isTouching=false;touches=[];}
+
+function onTouchEnd(e){
+  if(!isTouching)return;
+  isTouching=false;
+  if(!touchMoved){
+    const t=e.changedTouches[0];
+    detectStar(t.clientX,t.clientY);
+  }
+  touches=[];
+}
+
 window.addEventListener("touchstart",onTouchStart,{passive:false});
 window.addEventListener("touchmove",onTouchMove,{passive:false});
 window.addEventListener("touchend",onTouchEnd,{passive:false});
 
 // 🎯 Raycaster + 카드
 const raycaster=new THREE.Raycaster();
+raycaster.params.Points={threshold:2.5};
 const pointer=new THREE.Vector2();
 const backCover=document.getElementById("backCover");
 const nftCard=document.getElementById("nftCard");
@@ -301,6 +321,7 @@ function openCard(star){
   rotationPaused=true;
   canvas.classList.add("blur");
   backCover.classList.add("active");
+  canvas.style.pointerEvents="none";
   const color=star.userData.baseColor.getStyle();
   nftCard.style.border=`2px solid ${color}`;
   nftCard.style.boxShadow=`0 0 25px ${color}`;
@@ -315,50 +336,46 @@ function openCard(star){
   nftWallet.textContent="지갑 주소 : 0x1234...ABCD";
   nftCard.classList.add("active");
 }
+
+// 🔒 모달 중 배경 클릭 차단
+["touchstart","touchmove","touchend"].forEach(evt=>{
+  backCover.addEventListener(evt,e=>e.stopPropagation(),{passive:false});
+});
+
 function closeCard(){
   nftCard.classList.remove("active");
   backCover.classList.remove("active");
   canvas.classList.remove("blur");
-  setTimeout(()=>{rotationPaused=false;},400);
+  setTimeout(()=>{
+    canvas.style.pointerEvents="auto";
+    rotationPaused=false;
+  },450); // 애니메이션 후 재활성화
 }
-closeBtn.addEventListener("click",closeCard);
-backCover.addEventListener("click",closeCard);
+["click","touchstart"].forEach(evt=>{
+  closeBtn.addEventListener(evt,closeCard);
+  backCover.addEventListener(evt,closeCard);
+});
 
-// ⭐ 클릭 / 터치 보정
-function detectStar(x, y) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const canvasX = (x - rect.left) * scaleX;
-  const canvasY = (y - rect.top) * scaleY;
-  pointer.x = (canvasX / canvas.width) * 2 - 1;
-  pointer.y = -(canvasY / canvas.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, camera);
-  const clickable = stars.map(s => s.children[0]);
-  const intersects = raycaster.intersectObjects(clickable, true);
-  if (intersects.length === 0) return;
-  const obj = intersects[0].object;
-  const star = stars.find(s => s.children[0] === obj);
-  if (!star) return;
-  const dist = camera.position.distanceTo(star.position);
-  if (dist > 180) return;
+// ⭐ 클릭 감지
+function detectStar(x,y){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width;
+  const scaleY=canvas.height/rect.height;
+  const canvasX=(x-rect.left)*scaleX;
+  const canvasY=(y-rect.top)*scaleY;
+  pointer.x=(canvasX/canvas.width)*2-1;
+  pointer.y=-(canvasY/canvas.height)*2+1;
+  raycaster.setFromCamera(pointer,camera);
+  const clickable=stars.flatMap(s=>[s.children[0],s.children[2]]);
+  const intersects=raycaster.intersectObjects(clickable,true);
+  if(intersects.length===0)return;
+  const obj=intersects[0].object;
+  const star=stars.find(s=>s.children.includes(obj));
+  if(!star)return;
+  const dist=camera.position.distanceTo(star.position);
+  if(dist>180)return;
   openCard(star);
 }
-
-// 🖱️ 클릭 / 터치 이벤트
-canvas.addEventListener("click",(e)=>{
-  if(rotationPaused)return;
-  detectStar(e.clientX,e.clientY);
-});
-canvas.addEventListener("pointerdown",(e)=>{
-  if(rotationPaused)return;
-  detectStar(e.clientX,e.clientY);
-});
-canvas.addEventListener("touchend",(e)=>{
-  if(rotationPaused)return;
-  const t=e.changedTouches[0];
-  detectStar(t.clientX,t.clientY);
-});
 
 // 🌟 Animate
 function animate(){
@@ -373,14 +390,14 @@ function animate(){
     farStars.rotation.y+=0.00003;
     scene.rotation.y+=SCENE_ORBIT_SPEED;
   }
-  stars.forEach((s)=>{
+  stars.forEach(s=>{
     const core=s.children[0],atmosphere=s.children[1],halo=s.children[2],label=s.children[3];
     const phase=s.userData.phase;
     const flicker=(Math.sin(t*2.5+phase)*0.5+0.5);
     core.material.opacity=0.6+0.4*flicker;
     atmosphere.material.opacity=0.4+0.4*flicker;
     halo.material.opacity=0.3+0.7*flicker;
-    if(label) label.visible=(camera.position.distanceTo(s.position)<110);
+    if(label)label.visible=(camera.position.distanceTo(s.position)<110);
   });
   renderer.render(scene,camera);
 }
