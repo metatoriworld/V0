@@ -68,14 +68,6 @@ canvas.blur{filter:blur(6px);}
 #nftTitle{margin:4px 0;font-size:1.15rem;color:#fff;}
 #nftDesc{margin:6px 0 8px;font-size:0.9rem;line-height:1.4;color:#ddd;}
 #nftWallet{font-size:0.8rem;opacity:0.75;color:#aaa;}
-#closeBtn{
-  position:absolute;
-  top:8px;
-  right:14px;
-  font-size:1.3rem;
-  cursor:pointer;
-  color:#fff;
-}
 
 /* 🌈 좌측 상단 로고 */
 #logo{
@@ -98,7 +90,6 @@ canvas.blur{filter:blur(6px);}
 <div id="backCover"></div>
 
 <div id="nftCard">
-  <div id="closeBtn">✕</div>
   <img id="nftImage" src="" alt="NFT Image" />
   <h2 id="nftTitle"></h2>
   <p id="nftDesc"></p>
@@ -341,7 +332,6 @@ const nftImage=document.getElementById("nftImage");
 const nftTitle=document.getElementById("nftTitle");
 const nftDesc=document.getElementById("nftDesc");
 const nftWallet=document.getElementById("nftWallet");
-const closeBtn=document.getElementById("closeBtn");
 
 function openCard(star){
   rotationPaused=true;
@@ -363,10 +353,12 @@ function openCard(star){
   nftCard.classList.add("active");
 }
 
-// 🔒 모달 중 배경 클릭 차단
+// 🔒 모달 중 배경 클릭 차단 및 닫기
 ["touchstart","touchmove","touchend"].forEach(evt=>{
   backCover.addEventListener(evt,e=>e.stopPropagation(),{passive:false});
 });
+backCover.addEventListener("click",closeCard);
+backCover.addEventListener("touchstart",closeCard);
 
 function closeCard(){
   nftCard.classList.remove("active");
@@ -377,11 +369,8 @@ function closeCard(){
     rotationPaused=false;
   },450);
 }
-["click","touchstart"].forEach(evt=>{
-  closeBtn.addEventListener(evt,closeCard);
-  backCover.addEventListener(evt,closeCard);
-});
 
+// ⭐ 클릭 감지
 function detectStar(x,y){
   const rect=canvas.getBoundingClientRect();
   const scaleX=canvas.width/rect.width;
