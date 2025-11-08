@@ -2,761 +2,395 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>MetaToRI — Emotional Constellation Sky</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+<title>MetaToRI — Gem Constellation Edition</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   overflow:hidden;
-  background:radial-gradient(circle at 50% 50%, #060014 0%, #010010 70%, #000008 100%);
+  background:radial-gradient(circle at 50% 50%, #050011 0%, #01000a 70%, #000006 100%);
+  font-family:"Pretendard",system-ui,sans-serif;
+}
+canvas{
+  width:100%;
+  height:100%;
+  display:block;
   touch-action:none;
-  font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Noto Sans KR",system-ui,sans-serif;
+  transition:filter 0.4s ease;
 }
-canvas{width:100%;height:100%;display:block;}
-audio{display:none;}
+canvas.blur{
+  filter:blur(6px);
+}
 
-#controls{
+/* 🌑 뒷배경 커버 */
+#backCover{
   position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:12px;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.4s ease;
   z-index:5;
-  opacity:1;
-  transition:opacity 1s ease;
 }
-#controls.hide{opacity:0;pointer-events:none;}
-#controls button{
-  background:rgba(255,255,255,0.15);
-  border:1px solid rgba(255,255,255,0.25);
-  color:#fff;
-  font-size:22px;
-  padding:12px;
-  border-radius:50%;
-  cursor:pointer;
-  backdrop-filter:blur(5px);
-  box-shadow:0 0 8px rgba(255,255,255,0.3);
-}
-#controls button:active{background:rgba(255,255,255,0.4);}
-
-/* ⭐ NFT 넘버 라벨 */
-#starLabels{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  z-index:4;
-}
-.star-label{
-  position:absolute;
-  transform:translate(-50%,-50%);
-  font-size:10px;
-  color:#ffffff;
-  text-shadow:0 0 4px rgba(0,0,0,0.9),0 0 8px rgba(0,0,0,0.9);
-  opacity:0;
-  transition:opacity 0.25s ease;
-  white-space:nowrap;
-}
-
-/* 🌠 NFT 상세 모달 */
-#nftModal{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,15,0.65);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  z-index:10;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.35s ease;
-}
-#nftModal.show{
+#backCover.active{
   opacity:1;
   pointer-events:auto;
 }
-#nftModal .modal-card{
-  position:relative;
-  width:82%;
-  max-width:380px;
-  border-radius:22px;
-  padding:18px 18px 20px;
-  color:#fdfdff;
-  overflow:hidden;
-  transform:scale(0.9);
+
+/* 🌠 중앙 NFT 카드 */
+#nftCard{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.8);
+  background:rgba(10,10,20,0.9);
+  border-radius:20px;
+  padding:24px;
+  width:85%;
+  max-width:400px;
+  text-align:center;
   opacity:0;
-  transition:transform 0.35s ease, opacity 0.35s ease;
-}
-#nftModal.show .modal-card{
-  transform:scale(1);
-  opacity:1;
-}
-#nftModal .modal-card::before{
-  content:"";
-  position:absolute;
-  inset:-40%;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(255,255,255,0.28), transparent 60%),
-    radial-gradient(circle at 80% 100%, rgba(255,255,255,0.18), transparent 60%);
-  opacity:0.65;
-  mix-blend-mode:screen;
-  animation:cardStars 9s linear infinite;
   pointer-events:none;
+  transition:opacity 0.5s ease, transform 0.45s ease;
+  z-index:10;
 }
-@keyframes cardStars{
-  0%{transform:translate3d(0,0,0);}
-  100%{transform:translate3d(10%, -10%, 0);}
+#nftCard.active{
+  opacity:1;
+  pointer-events:auto;
+  transform:translate(-50%,-50%) scale(1);
 }
-
-#nftModal .modal-inner{
-  position:relative;
-  z-index:1;
-}
-
-#nftModal .modal-close{
-  position:absolute;
-  top:10px;
-  right:10px;
-  width:30px;
-  height:30px;
-  border-radius:999px;
-  border:none;
-  background:rgba(0,0,0,0.4);
-  color:#ffffff;
-  font-size:18px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 0 8px rgba(0,0,0,0.7);
-}
-
-#nftModal .image-wrap{
-  width:100%;
-  border-radius:16px;
-  overflow:hidden;
-  background:rgba(0,0,0,0.5);
-  box-shadow:0 0 16px rgba(0,0,0,0.9);
+#nftImage{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  object-fit:cover;
   margin-bottom:14px;
+  box-shadow:0 0 25px rgba(255,255,255,0.7);
 }
-#nftModal .image-wrap img{
-  width:100%;
-  display:block;
+#nftTitle{
+  margin:4px 0;
+  font-size:1.15rem;
+  color:#fff;
 }
-
-#nftModal .nft-id{
-  font-size:14px;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  opacity:0.85;
-  margin-bottom:4px;
+#nftDesc{
+  margin:6px 0 8px;
+  font-size:0.9rem;
+  line-height:1.4;
+  color:#ddd;
 }
-#nftModal .nft-emotion{
-  font-size:18px;
-  font-weight:700;
-  margin-bottom:6px;
+#nftWallet{
+  font-size:0.8rem;
+  opacity:0.75;
+  color:#aaa;
 }
-#nftModal .nft-desc{
-  font-size:13px;
-  line-height:1.6;
-  opacity:0.92;
-}
-
-/* 모바일에서 살짝 위로 띄우기 */
-@media (max-height:600px){
-  #nftModal .modal-card{
-    margin-top:-20px;
-  }
+#closeBtn{
+  position:absolute;
+  top:8px;
+  right:14px;
+  font-size:1.3rem;
+  cursor:pointer;
+  color:#fff;
 }
 </style>
 </head>
 <body>
-<audio id="bgm" src="https://github.com/pageno/mtw/raw/main/MetaToriWorld.mp3" autoplay loop></audio>
 <canvas id="universe"></canvas>
 
-<div id="controls">
-  <button id="zoomIn">＋</button>
-  <button id="zoomOut">－</button>
-  <button id="reset">🌀</button>
-</div>
+<!-- 🌑 배경 커버 -->
+<div id="backCover"></div>
 
-<!-- ⭐ NFT 넘버 라벨 컨테이너 -->
-<div id="starLabels"></div>
-
-<!-- 🌠 NFT 상세 모달 -->
-<div id="nftModal">
-  <div class="modal-card">
-    <button id="modalClose" class="modal-close">✕</button>
-    <div class="modal-inner">
-      <div class="image-wrap">
-        <img id="nftImage" src="" alt="NFT 이미지" />
-      </div>
-      <div class="nft-id" id="nftId">#0000</div>
-      <div class="nft-emotion" id="nftEmotion">Emotion / 감정</div>
-      <div class="nft-desc" id="nftDesc">
-        이 별은 테스트용 설명입니다.
-      </div>
-    </div>
-  </div>
+<!-- 🌠 NFT 카드 -->
+<div id="nftCard">
+  <div id="closeBtn">✕</div>
+  <img id="nftImage" src="" alt="NFT Image" />
+  <h2 id="nftTitle"></h2>
+  <p id="nftDesc"></p>
+  <div id="nftWallet"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.6.5/dist/three-spritetext.min.js"></script>
 <script>
-const canvas = document.getElementById("universe");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio || 1);
-renderer.setClearColor(0x000010, 1);
-const scene = new THREE.Scene();
+const canvas=document.getElementById("universe");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000010,1);
 
-// 🎥 카메라
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  10000
-);
-const startPos = new THREE.Vector3(0, 0, 35);
-camera.position.copy(startPos);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,3000);
+camera.position.set(0,0,150);
+const cameraTarget=new THREE.Vector3(0,0,0);
 
-const loader = new THREE.TextureLoader();
+const MIN_DISTANCE=3,MAX_DISTANCE=400,ORBIT_SPEED=0.005,SCENE_ORBIT_SPEED=0.0002;
+const FOV_MAX=60,FOV_MIN=5;
+let isTouching=false,touches=[],prevDistance=0,prevClientX=0,prevClientY=0;
+let rotationPaused=false;
 
-// 🌍 지구
-const earth = new THREE.Mesh(
-  new THREE.SphereGeometry(1.4, 64, 64),
+// 🌍 Earth
+const loader=new THREE.TextureLoader();
+const earth=new THREE.Mesh(
+  new THREE.SphereGeometry(2,64,64),
   new THREE.MeshPhongMaterial({
-    map: loader.load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg"),
-    emissive: 0x222244,
-    emissiveIntensity: 0.7
+    map:loader.load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg"),
+    emissive:0x222244,emissiveIntensity:0.9
   })
 );
 scene.add(earth);
 
-// 💡 조명
-const sun = new THREE.PointLight(0xffffff, 2, 0, 2);
-sun.position.set(10, 10, 10);
-scene.add(sun, new THREE.AmbientLight(0x404060, 0.9));
+// 💡 Light
+const sun=new THREE.PointLight(0xffffff,2,0,2);
+sun.position.set(15,10,10);
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0x303040,1));
 
-// 🌈 감정 7색 + 메타 정보
-const emotionColors = [
-  0xffd700, // Joy
-  0x3c8dff, // Sadness
-  0xff4040, // Anger
-  0xa5ff9e, // Peace
-  0xff8bd8, // Love
-  0xb28bff, // Hope
-  0x7feaff  // Memory
+// 💎 Gem Colors
+const gemColors=[
+  0xe0115f,0x0f52ba,0x50c878,0xffd700,0x9966cc,0x8b0000,
+  0xa8c3bc,0xb4d200,0x40e0d0,0xffffff,0xff69b4,0x353839
 ];
+const haloTex=loader.load("https://threejs.org/examples/textures/lensflare/lensflare0.png");
+const plasmaTex=loader.load("https://threejs.org/examples/textures/lava/cloud.png");
+const roundStarTex=loader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/circle.png");
+plasmaTex.wrapS=plasmaTex.wrapT=THREE.RepeatWrapping;
 
-const emotionMeta = [
-  { key:"Joy",      label:"JOY · 기쁨",     desc:"따뜻한 웃음과 설렘이 담긴 꿈의 조각입니다." },
-  { key:"Sadness",  label:"SADNESS · 슬픔", desc:"잠시 멈춰 선 마음, 그러나 사라지지 않는 이야기입니다." },
-  { key:"Anger",    label:"ANGER · 분노",   desc:"상처와 부딪힘 속에서도 앞으로 나아가려는 힘입니다." },
-  { key:"Peace",    label:"PEACE · 평온",   desc:"고요한 밤하늘처럼 마음이 가라앉는 순간을 담았습니다." },
-  { key:"Love",     label:"LOVE · 사랑",   desc:"소중한 사람들을 떠올리게 하는 다정한 빛입니다." },
-  { key:"Hope",     label:"HOPE · 희망",   desc:"아직 오지 않은 내일을 기다리는 작은 불씨입니다." },
-  { key:"Memory",   label:"MEMORY · 기억", desc:"잊혀지지 않기를 바라는 순간들을 별에 담았습니다." }
-];
+// 🌟 Create Star
+let nftCounter=1;
+function createStar(x,y,z,size=0.25,starColor){
+  const color=new THREE.Color(starColor||gemColors[Math.floor(Math.random()*gemColors.length)]);
+  const group=new THREE.Group();
+  group.position.set(x,y,z);
+  group.userData.nftId=nftCounter++;
+  group.userData.baseColor=color;
+  group.userData.phase=Math.random()*Math.PI*2;
+  group.userData.colorKey=color.getHex();
 
-// 랜덤 NFT 이미지 (테스트용 랜덤 이미지)
-const nftImages = [
-  "https://picsum.photos/480/320?random=11",
-  "https://picsum.photos/480/320?random=22",
-  "https://picsum.photos/480/320?random=33",
-  "https://picsum.photos/480/320?random=44",
-  "https://picsum.photos/480/320?random=55",
-  "https://picsum.photos/480/320?random=66",
-  "https://picsum.photos/480/320?random=77"
-];
+  const core=new THREE.Mesh(
+    new THREE.SphereGeometry(size*0.6,32,32),
+    new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending})
+  );
 
-const haloTex = loader.load("https://threejs.org/examples/textures/lensflare/lensflare0.png");
+  const atmosphere=new THREE.Mesh(
+    new THREE.SphereGeometry(size*2,16,16),
+    new THREE.MeshBasicMaterial({
+      map:plasmaTex,color:color,transparent:true,opacity:0.5,
+      blending:THREE.AdditiveBlending,depthWrite:false
+    })
+  );
 
-// ⭐ NFT 넘버 라벨 컨테이너
-const labelsContainer = document.getElementById("starLabels");
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:haloTex,color:color,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending
+  }));
+  halo.scale.set(size*12,size*12,1);
 
-// 클릭 가능한 별 리스트 & NFT 넘버 카운터
-const clickableStars = [];
-let nftCounter = 1;
+  const label=new SpriteText(`#${group.userData.nftId}`,0.2,"#ffffff");
+  label.position.set(0.5,0.5,0);
 
-// 🌟 별 생성 (중심 코어 + 오라 + 감정색 + 깜빡임 + NFT 메타)
-function createStar(x, y, z, size = 0.2){
-  const emotionIndex = Math.floor(Math.random()*emotionColors.length);
-  const colorHex = emotionColors[emotionIndex];
-  const color = new THREE.Color(colorHex);
-
-  const mat = new THREE.MeshPhysicalMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 2.0,
-    roughness: 0.25,
-    metalness: 0.3,
-    clearcoat: 1,
-    transparent: true,
-    opacity: 0.98
-  });
-
-  const star = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), mat);
-
-  // 오로라 느낌 halo
-  const haloMat = new THREE.SpriteMaterial({
-    map: haloTex,
-    color,
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  });
-  const halo = new THREE.Sprite(haloMat);
-  halo.scale.set(2.0, 2.0, 1);
-  star.add(halo);
-
-  // 중심 코어 빛
-  const coreLight = new THREE.PointLight(color, 2.8, 6);
-  star.add(coreLight);
-
-  // 깜빡임 파라미터 (별마다 다르게)
-  const twinkleSpeeds = [0.5, 0.8, 1.3, 1.9];
-  const twinkleSpeed = twinkleSpeeds[Math.floor(Math.random()*twinkleSpeeds.length)];
-  const twinkleIntensity = 0.8 + Math.random()*0.6; // 0.8~1.4
-  const phase = Math.random()*Math.PI*2;
-
-  // NFT 넘버 & 랜덤 이미지
-  const nftId = String(nftCounter++).padStart(4,"0");
-  const imageUrl = nftImages[Math.floor(Math.random()*nftImages.length)];
-
-  // HTML 라벨 생성 (NFT 넘버)
-  const label = document.createElement("div");
-  label.className = "star-label";
-  label.textContent = "#" + nftId;
-  labelsContainer.appendChild(label);
-
-  star.position.set(x, y, z);
-  star.userData = {
-    isStar: true,
-    halo,
-    coreLight,
-    twinkleSpeed,
-    twinkleIntensity,
-    phase,
-    emotionIndex,
-    colorHex,
-    nftId,
-    imageUrl,
-    label
-  };
-
-  clickableStars.push(star);
-  return star;
-}
-
-// 🌌 별자리 데이터 (여러 대표 별자리, 대략적 형태)
-const constellationsData = {
-  "Orion":[[-5,6,-3],[-3,3,-3],[-1,0,-2],[1,0,-2],[3,0,-2],[5,2,-3],[6,-2,-3]],
-  "UrsaMajor":[[-8,8,-4],[-6,6,-3],[-4,4,-3],[-2,3,-2],[0,2,-2],[2,0,-2],[4,-2,-3]],
-  "Cassiopeia":[[-5,-6,2],[-3,-4,3],[-1,-2,4],[1,-3,4],[3,-5,3]],
-  "Scorpius":[[2,-8,4],[3,-9,5],[4,-10,4],[5,-11,3],[6,-12,2]],
-  "Pleiades":[[5,7,-2],[6,8,-2],[7,9,-3],[8,8,-3],[9,7,-2],[10,8,-3],[11,9,-3]],
-  "Andromeda":[[0,-6,-5],[1,-7,-6],[2,-8,-7],[3,-9,-6],[4,-8,-5]],
-  "Pegasus":[[-10,-8,-5],[-9,-9,-6],[-8,-10,-7],[-7,-9,-6],[-6,-8,-5]],
-  "Leo":[[-8,3,-2],[-7,2,-1],[-6,1,0],[-5,0,1],[-4,-1,2]],
-  "Virgo":[[-2,7,5],[-1,8,4],[0,9,3],[1,8,2]],
-  "Aquarius":[[7,-4,6],[8,-5,6],[9,-6,5],[10,-7,4]],
-  "Pisces":[[4,-2,4],[5,-3,5],[6,-4,5],[7,-5,4]],
-  "Aquila":[[3,6,5],[4,7,5],[5,8,4],[6,9,3]],
-  "Cygnus":[[-3,5,6],[-2,6,6],[-1,7,5],[0,8,4],[1,9,3]],
-  "Draco":[[-9,4,5],[-8,5,5],[-7,6,4],[-6,7,3]],
-  "Sagittarius":[[5,-7,7],[6,-8,6],[7,-9,5],[8,-10,4]],
-  "Aries":[[-3,-5,6],[-2,-4,6],[-1,-3,5],[0,-2,4]],
-  "Cancer":[[-4,2,5],[-3,3,5],[-2,4,4],[-1,5,3]],
-  "Capricornus":[[2,-6,7],[3,-7,6],[4,-8,5],[5,-9,4]],
-  "Ophiuchus":[[0,-10,6],[1,-11,5],[2,-12,4],[3,-13,3]],
-  "UrsaMinor":[[8,6,-4],[7,5,-3],[6,4,-2],[5,3,-1],[4,2,0]]
-};
-
-// 🌠 별자리 생성 (모두 같은 반지름 쉘 위에 투영)
-const constellations = [];
-const CONST_RADIUS = 14; // 지구에서 별자리까지 거리 통일
-
-function createConstellation(name, coords, lineColor){
-  const group = new THREE.Group();
-  group.userData.name = name;
-
-  const points = [];
-  const projectedCoords = [];
-
-  let maxLen = 0;
-  coords.forEach(([x,y,z])=>{
-    const len = Math.sqrt(x*x + y*y + z*z);
-    if(len > maxLen) maxLen = len;
-  });
-  if (maxLen < 0.0001) maxLen = 1;
-
-  const scale = CONST_RADIUS / maxLen;
-
-  coords.forEach(([x,y,z])=>{
-    const vx = x * scale;
-    const vy = y * scale;
-    const vz = z * scale;
-    projectedCoords.push([vx,vy,vz]);
-    points.push(new THREE.Vector3(vx,vy,vz));
-  });
-
-  // 연결 선
-  const mat = new THREE.LineBasicMaterial({
-    color: lineColor,
-    transparent: true,
-    opacity: 0.35
-  });
-  const geo = new THREE.BufferGeometry().setFromPoints(points);
-  const line = new THREE.Line(geo, mat);
-  group.add(line);
-
-  // 각 점에 별 생성
-  projectedCoords.forEach(([x,y,z])=>{
-    const s = createStar(x,y,z);
-    group.add(s);
-  });
-
+  group.add(core,atmosphere,halo,label);
   scene.add(group);
   return group;
 }
 
-// ⭐ 모든 별자리 생성
-Object.entries(constellationsData).forEach(([name,coords])=>{
-  constellations.push(createConstellation(name, coords, 0x88aaff));
+// 🌌 Stars
+const stars=[];
+const totalStars=1200;
+for(let i=0;i<totalStars;i++){
+  const r=20+Math.random()*100;
+  const theta=Math.random()*Math.PI*2;
+  const phi=Math.acos((Math.random()*2)-1);
+  const x=r*Math.sin(phi)*Math.cos(theta);
+  const y=r*Math.sin(phi)*Math.sin(theta);
+  const z=r*Math.cos(phi);
+  stars.push(createStar(x,y,z,0.18+Math.random()*0.15));
+}
+
+// 🌠 Background Stars
+const farGeo=new THREE.BufferGeometry();
+const farCount=6000;
+const farPos=new Float32Array(farCount*3);
+for(let i=0;i<farCount;i++){
+  const r=150+Math.random()*400;
+  const t=Math.random()*Math.PI*2;
+  const p=Math.acos((Math.random()*2)-1);
+  farPos[i*3]=r*Math.sin(p)*Math.cos(t);
+  farPos[i*3+1]=r*Math.sin(p)*Math.sin(t);
+  farPos[i*3+2]=r*Math.cos(p);
+}
+farGeo.setAttribute("position",new THREE.BufferAttribute(farPos,3));
+const farStars=new THREE.Points(farGeo,new THREE.PointsMaterial({
+  map:roundStarTex,color:0xffffff,size:1.3,transparent:true,opacity:0.85,
+  blending:THREE.AdditiveBlending,sizeAttenuation:true
+}));
+scene.add(farStars);
+
+// 🌌 같은 색상끼리 연결선
+const colorGroups={};
+for(const s of stars){
+  const hex=s.userData.colorKey;
+  if(!colorGroups[hex]) colorGroups[hex]=[];
+  colorGroups[hex].push(s.position);
+}
+for(const hex in colorGroups){
+  const group=colorGroups[hex];
+  const points=[];
+  for(let i=0;i<group.length;i++){
+    const a=group[i];
+    for(let j=i+1;j<group.length;j++){
+      const b=group[j];
+      const dist=a.distanceTo(b);
+      if(dist<15){points.push(a.x,a.y,a.z,b.x,b.y,b.z);}
+    }
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute("position",new THREE.Float32BufferAttribute(points,3));
+  const mat=new THREE.LineBasicMaterial({color:parseInt(hex),transparent:true,opacity:0.4,blending:THREE.AdditiveBlending});
+  scene.add(new THREE.LineSegments(geo,mat));
+}
+
+// 🖐️ Controls
+function getDistance(t1,t2){const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;return Math.sqrt(dx*dx+dy*dy);}
+function orbitCamera(dx,dy){
+  const s=ORBIT_SPEED*1.5;
+  const dist=camera.position.distanceTo(cameraTarget);
+  const offset=new THREE.Vector3().subVectors(camera.position,cameraTarget);
+  const ry=new THREE.Matrix4().makeRotationY(-dx*s);
+  offset.applyMatrix4(ry);
+  let newY=offset.y-dy*s*dist;
+  newY=THREE.MathUtils.clamp(newY,-dist*1.2,dist*1.2);
+  offset.y=newY;
+  camera.position.copy(cameraTarget).add(offset.normalize().multiplyScalar(dist));
+}
+function onTouchStart(e){e.preventDefault();isTouching=true;touches=Array.from(e.touches);
+if(touches.length===2){prevDistance=getDistance(touches[0],touches[1]);}
+else if(touches.length===1){prevClientX=touches[0].clientX;prevClientY=touches[0].clientY;}}
+function onTouchMove(e){
+  if(!isTouching)return;e.preventDefault();const current=Array.from(e.touches);
+  if(current.length===2){
+    const d=getDistance(current[0],current[1]);const dd=d-prevDistance;
+    const dist=camera.position.distanceTo(cameraTarget);
+    const zf=dd*0.005*(dist/50);
+    const dir=new THREE.Vector3().subVectors(camera.position,cameraTarget).normalize();
+    const mv=dir.multiplyScalar(dist*zf);camera.position.add(mv);
+    const newDist=camera.position.distanceTo(cameraTarget);
+    if(newDist<MIN_DISTANCE||newDist>MAX_DISTANCE){camera.position.sub(mv);}
+    prevDistance=d;
+  }else if(current.length===1){
+    const cx=current[0].clientX,cy=current[0].clientY;
+    orbitCamera(cx-prevClientX,cy-prevClientY);
+    prevClientX=cx;prevClientY=cy;
+  }
+  touches=current;
+}
+function onTouchEnd(){isTouching=false;touches=[];}
+window.addEventListener("touchstart",onTouchStart,{passive:false});
+window.addEventListener("touchmove",onTouchMove,{passive:false});
+window.addEventListener("touchend",onTouchEnd,{passive:false});
+
+// 🎯 Raycaster + 카드
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+const backCover=document.getElementById("backCover");
+const nftCard=document.getElementById("nftCard");
+const nftImage=document.getElementById("nftImage");
+const nftTitle=document.getElementById("nftTitle");
+const nftDesc=document.getElementById("nftDesc");
+const nftWallet=document.getElementById("nftWallet");
+const closeBtn=document.getElementById("closeBtn");
+
+function openCard(star){
+  rotationPaused=true;
+  canvas.classList.add("blur");
+  backCover.classList.add("active");
+  const color=star.userData.baseColor.getStyle();
+  nftCard.style.border=`2px solid ${color}`;
+  nftCard.style.boxShadow=`0 0 25px ${color}`;
+  const c=document.createElement("canvas");c.width=200;c.height=200;
+  const ctx=c.getContext("2d");
+  const grad=ctx.createRadialGradient(100,100,20,100,100,100);
+  grad.addColorStop(0,color);grad.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=grad;ctx.beginPath();ctx.arc(100,100,100,0,Math.PI*2);ctx.fill();
+  nftImage.src=c.toDataURL("image/png");
+  nftTitle.textContent=`NFT #${star.userData.nftId}`;
+  nftDesc.textContent="이 별은 MetaToRI Emotional Sky의 감정 보석 중 하나입니다.";
+  nftWallet.textContent="지갑 주소 : 0x1234...ABCD";
+  nftCard.classList.add("active");
+}
+function closeCard(){
+  nftCard.classList.remove("active");
+  backCover.classList.remove("active");
+  canvas.classList.remove("blur");
+  setTimeout(()=>{rotationPaused=false;},400);
+}
+closeBtn.addEventListener("click",closeCard);
+backCover.addEventListener("click",closeCard);
+
+// ⭐ 클릭 / 터치 보정
+function detectStar(x, y) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const canvasX = (x - rect.left) * scaleX;
+  const canvasY = (y - rect.top) * scaleY;
+  pointer.x = (canvasX / canvas.width) * 2 - 1;
+  pointer.y = -(canvasY / canvas.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const clickable = stars.map(s => s.children[0]);
+  const intersects = raycaster.intersectObjects(clickable, true);
+  if (intersects.length === 0) return;
+  const obj = intersects[0].object;
+  const star = stars.find(s => s.children[0] === obj);
+  if (!star) return;
+  const dist = camera.position.distanceTo(star.position);
+  if (dist > 180) return;
+  openCard(star);
+}
+
+// 🖱️ 클릭 / 터치 이벤트
+canvas.addEventListener("click",(e)=>{
+  if(rotationPaused)return;
+  detectStar(e.clientX,e.clientY);
+});
+canvas.addEventListener("pointerdown",(e)=>{
+  if(rotationPaused)return;
+  detectStar(e.clientX,e.clientY);
+});
+canvas.addEventListener("touchend",(e)=>{
+  if(rotationPaused)return;
+  const t=e.changedTouches[0];
+  detectStar(t.clientX,t.clientY);
 });
 
-// 🌌 배경 별
-const starGeo = new THREE.BufferGeometry();
-const pos = new Float32Array(5000*3);
-for(let i=0;i<5000;i++){
-  const r = 400 + Math.random()*1000;
-  const t = Math.random()*Math.PI*2;
-  const p = Math.acos((Math.random()*2)-1);
-  pos[i*3]   = r*Math.sin(p)*Math.cos(t);
-  pos[i*3+1] = r*Math.sin(p)*Math.sin(t);
-  pos[i*3+2] = r*Math.cos(p);
-}
-starGeo.setAttribute("position", new THREE.BufferAttribute(pos,3));
-const pts = new THREE.Points(
-  starGeo,
-  new THREE.PointsMaterial({
-    color:0xffffff,
-    size:1.1,
-    transparent:true,
-    opacity:0.8,
-    blending:THREE.AdditiveBlending
-  })
-);
-scene.add(pts);
-
-// 🎞 애니메이션 (회전 + 중심 발광 + 오로라 파도)
-const tmpVec = new THREE.Vector3();
-let isPaused = false;
-let isModalOpen = false;
-
-function updateStarLabels(){
-  const show = camera.position.z < 15 && !isModalOpen;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const proj = new THREE.Vector3();
-
-  clickableStars.forEach(star=>{
-    const data = star.userData;
-    const label = data.label;
-    if(!label) return;
-
-    if(!show){
-      label.style.opacity = 0;
-      return;
-    }
-
-    star.getWorldPosition(tmpVec);
-    proj.copy(tmpVec).project(camera);
-
-    const x = (proj.x * 0.5 + 0.5) * width;
-    const y = (-proj.y * 0.5 + 0.5) * height + 14; // 별 아래쪽
-
-    label.style.left = x + "px";
-    label.style.top  = y + "px";
-    label.style.opacity = 1;
-  });
-}
-
+// 🌟 Animate
 function animate(){
   requestAnimationFrame(animate);
-
-  const time = Date.now()*0.002;
-
-  if(!isPaused){
-    earth.rotation.y += 0.0004;
-    pts.rotation.y   += 0.00008;
-    constellations.forEach(g => { g.rotation.y += 0.00025; });
+  const t=performance.now()*0.001;
+  const dist=camera.position.distanceTo(cameraTarget);
+  camera.fov=THREE.MathUtils.mapLinear(dist,MAX_DISTANCE,MIN_DISTANCE,FOV_MAX,FOV_MIN);
+  camera.updateProjectionMatrix();
+  camera.lookAt(cameraTarget);
+  if(!isTouching && !rotationPaused){
+    earth.rotation.y+=0.0004;
+    farStars.rotation.y+=0.00003;
+    scene.rotation.y+=SCENE_ORBIT_SPEED;
   }
-
-  // 별 깜빡임 / 오로라 파동
-  scene.traverse(obj=>{
-    if(obj.userData && obj.userData.isStar){
-      const d = obj.userData;
-
-      obj.getWorldPosition(tmpVec);
-      const dist = tmpVec.length();
-      const wavePhase = dist * 0.25;
-      const globalWave = Math.sin(time*0.7 + wavePhase)*0.5 + 0.5;
-
-      const localWave = Math.sin(time*d.twinkleSpeed + d.phase)*0.5 + 0.5;
-
-      const tw = (localWave*0.6 + globalWave*0.4);
-
-      obj.material.emissiveIntensity = 2.6 * d.twinkleIntensity * (0.6 + 0.4*tw);
-
-      if(d.coreLight){
-        d.coreLight.intensity = 3.2 * d.twinkleIntensity * (0.6 + 0.4*tw);
-      }
-
-      if(d.halo){
-        d.halo.material.opacity = 0.45 + 0.5 * tw;
-        const scale = 1.7 + 0.6 * tw;
-        d.halo.scale.set(scale, scale, 1);
-      }
-    }
+  stars.forEach((s)=>{
+    const core=s.children[0],atmosphere=s.children[1],halo=s.children[2],label=s.children[3];
+    const phase=s.userData.phase;
+    const flicker=(Math.sin(t*2.5+phase)*0.5+0.5);
+    core.material.opacity=0.6+0.4*flicker;
+    atmosphere.material.opacity=0.4+0.4*flicker;
+    halo.material.opacity=0.3+0.7*flicker;
+    if(label) label.visible=(camera.position.distanceTo(s.position)<110);
   });
-
-  renderer.render(scene, camera);
-  updateStarLabels();
+  renderer.render(scene,camera);
 }
 animate();
 
-// ✋ 드래그 회전 + 클릭 구분
-let dragging=false,lastX=0,lastY=0,downX=0,downY=0,moved=false;
-
-canvas.addEventListener("pointerdown",e=>{
-  dragging=true;
-  lastX = downX = e.clientX;
-  lastY = downY = e.clientY;
-  moved=false;
-  showControls();
-});
-
-window.addEventListener("pointermove",e=>{
-  if(!dragging)return;
-  const dx=e.clientX-lastX,dy=e.clientY-lastY;
-  if(Math.abs(e.clientX-downX)>3 || Math.abs(e.clientY-downY)>3) moved=true;
-  lastX=e.clientX;lastY=e.clientY;
-  scene.rotation.y+=dx*0.002;
-  scene.rotation.x+=dy*0.002;
-  showControls();
-});
-
-window.addEventListener("pointerup",e=>{
-  if(dragging && !moved && !isModalOpen && camera.position.z < 15){
-    handleStarClick(e);
-  }
-  dragging=false;
-});
-
-// 🔍 Raycaster 를 이용한 별 클릭
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-function handleStarClick(e){
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(clickableStars);
-  if(intersects.length>0){
-    const star = intersects[0].object;
-    openNftModal(star);
-  }
-}
-
-// 🌠 NFT 모달 제어
-const nftModal   = document.getElementById("nftModal");
-const modalClose = document.getElementById("modalClose");
-const nftImageEl   = document.getElementById("nftImage");
-const nftIdEl      = document.getElementById("nftId");
-const nftEmotionEl = document.getElementById("nftEmotion");
-const nftDescEl    = document.getElementById("nftDesc");
-
-function hexToRgbComponents(hex){
-  const c = new THREE.Color(hex);
-  return {
-    r:Math.round(c.r*255),
-    g:Math.round(c.g*255),
-    b:Math.round(c.b*255)
-  };
-}
-
-function openNftModal(star){
-  const d = star.userData;
-  const meta = emotionMeta[d.emotionIndex] || emotionMeta[0];
-
-  nftImageEl.src = d.imageUrl;
-  nftIdEl.textContent = "#" + d.nftId;
-  nftEmotionEl.textContent = meta.label;
-  nftDescEl.textContent = meta.desc;
-
-  const {r,g,b} = hexToRgbComponents(d.colorHex);
-
-  const card = nftModal.querySelector(".modal-card");
-  card.style.background =
-    `radial-gradient(circle at 0% 0%, rgba(${r},${g},${b},0.95), rgba(4,0,20,0.98) 55%, rgba(0,0,0,0.98) 100%)`;
-  card.style.boxShadow =
-    `0 0 25px rgba(${r},${g},${b},0.95), 0 0 80px rgba(${r},${g},${b},0.7)`;
-
-  nftModal.classList.add("show");
-  isModalOpen = true;
-  isPaused = true;
-}
-
-function closeNftModal(){
-  nftModal.classList.remove("show");
-  isModalOpen = false;
-  isPaused = false;
-}
-
-modalClose.addEventListener("click", closeNftModal);
-nftModal.addEventListener("click", e=>{
-  if(e.target === nftModal){ // 배경 클릭 시 닫기
-    closeNftModal();
-  }
-});
-
-// 🔘 버튼 (줌 인/아웃/원점)
-document.getElementById("zoomIn").onclick=()=>{
-  camera.position.z = Math.max(4, camera.position.z - 1.5);
-  showControls();
-};
-document.getElementById("zoomOut").onclick=()=>{
-  camera.position.z = Math.min(90, camera.position.z + 1.5);
-  showControls();
-};
-document.getElementById("reset").onclick=()=>{
-  camera.position.copy(startPos);
-  showControls();
-};
-
-// 🎛 버튼 자동 숨김
-const controls = document.getElementById("controls");
-let hideTimer=null;
-function showControls(){
-  controls.classList.remove("hide");
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(()=>controls.classList.add("hide"), 3000);
-}
-showControls();
-
-// 🔉 배경음 (모바일: 첫 터치에서 재생 보장)
-const bgm = document.getElementById("bgm");
-bgm.volume = 0.35;
-document.body.addEventListener("pointerdown", ()=>{ if(bgm.paused) bgm.play(); });
-
-// 🌠 감정별 별 탄생 애니메이션 (지구에서 떠올라 빛나는 별 50개, 15초 간격)
-let bornCount = 0;
-const MAX_STARS = 50;
-
-function birthStar() {
-  if (bornCount >= MAX_STARS) return;
-  bornCount++;
-
-  // 🌈 색상과 크기 랜덤
-  const colorHex = emotionColors[Math.floor(Math.random() * emotionColors.length)];
-  const color = new THREE.Color(colorHex);
-  const size = 0.25 + Math.random() * 0.4; // 0.25~0.65
-
-  const mat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    emissive: 0xffffff,
-    emissiveIntensity: 0.2,
-    transparent: true,
-    opacity: 0.25,
-    roughness: 0.3,
-    metalness: 0.3
-  });
-
-  const star = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), mat);
-  const haloMat = new THREE.SpriteMaterial({
-    map: haloTex,
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.25,
-    blending: THREE.AdditiveBlending
-  });
-  const halo = new THREE.Sprite(haloMat);
-  halo.scale.set(2.0, 2.0, 1);
-  star.add(halo);
-
-  // 시작 위치 (지구 근처 랜덤)
-  const startPos = new THREE.Vector3(
-    (Math.random() - 0.5) * 1.5,
-    (Math.random() - 0.5) * 1.5,
-    (Math.random() - 0.5) * 1.5
-  );
-  // 목표 위치 (지구 위쪽 랜덤한 방향)
-  const targetPos = new THREE.Vector3(
-    (Math.random() - 0.5) * 20,
-    8 + Math.random() * 6,
-    (Math.random() - 0.5) * 10
-  );
-
-  star.position.copy(startPos);
-  scene.add(star);
-
-  const start = performance.now();
-  const duration1 = 5000; // 5초 이동
-  const duration2 = 5000; // 5초 빛 변화
-
-  function animateBirth() {
-    const now = performance.now();
-    const elapsed = now - start;
-
-    if (elapsed < duration1) {
-      const t = elapsed / duration1;
-      const ease = t * t * (3 - 2 * t);
-      star.position.lerpVectors(startPos, targetPos, ease);
-      mat.opacity = 0.25 + ease * 0.3;
-      haloMat.opacity = 0.25 + ease * 0.3;
-      requestAnimationFrame(animateBirth);
-    } else if (elapsed < duration1 + duration2) {
-      const t = (elapsed - duration1) / duration2;
-      const ease = t * t * (3 - 2 * t);
-      mat.color.lerp(color, ease);
-      mat.emissive.lerp(color, ease);
-      mat.emissiveIntensity = 0.2 + ease * 3;
-      haloMat.color.lerp(color, ease);
-      haloMat.opacity = 0.4 + ease * 0.6;
-      requestAnimationFrame(animateBirth);
-    } else {
-      mat.color.set(color);
-      mat.emissive.set(color);
-      mat.emissiveIntensity = 2.8;
-      haloMat.color.set(color);
-      haloMat.opacity = 1.0;
-    }
-  }
-  animateBirth();
-}
-
-// 15초마다 하나씩 생성 (최대 50개)
-birthStar();
-const birthInterval = setInterval(() => {
-  if (bornCount >= MAX_STARS) {
-    clearInterval(birthInterval);
-  } else {
-    birthStar();
-  }
-}, 15000);
-
-// 실행
-birthStar();
-
-// 🔁 리사이즈
-window.addEventListener("resize", ()=>{
-  camera.aspect = window.innerWidth / window.innerHeight;
+// 🔁 Resize
+window.addEventListener("resize",()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
 });
 </script>
 </body>
